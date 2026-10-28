@@ -19,7 +19,7 @@ jobs:
             const fs = require('fs');
             
             // 1. 透過 GitHub API 獲取你儲存庫的所有 Release 檔案
-            const response = await github.rest.repo.listReleases({
+            const response = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
