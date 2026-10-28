@@ -1,0 +1,67 @@
+name: Generate GNU Style Directory Index
+
+on:
+  release:
+    types: [published, edited, deleted] # 每當你發佈、修改或刪除 Release 時，自動觸發
+  workflow_dispatch: # 允許你隨時手動點擊按鈕觸發
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Fetch Releases and Generate HTML
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // 1. 透過 GitHub API 獲取你儲存庫的所有 Release 檔案
+            const response = await github.rest.repo.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            let filesHtml = '';
+            
+            // 2. 循環遍歷所有 Release 裡的大包，動態提取檔名、日期、大小，拒絕硬編碼
+            for (const release of response.data) {
+              for (const asset of release.assets) {
+                const name = asset.name;
+                const size = (asset.size / 1024 / 1024).toFixed(2) + 'M';
+                const date = new Date(asset.updated_at).toISOString().replace('T', ' ').substring(0, 19);
+                const url = asset.browser_download_url; // 拿到真正的 GitHub Releases 下載連結
+                
+                // 3. 動態拼裝成 ftp.gnu.org 的經典文件目錄格式
+                filesHtml += `[   ] <a href="${url}">${name.padEnd(40)}</a> ${date}    ${size.padStart(6)}\n`;
+              }
+            }
+            
+            // 4. 生成完整的網頁模板
+            const htmlContent = `<!DOCTYPE html>
+            <html>
+            <head>
+              <title>Index of /</title>
+              <style>body { font-family: monospace; padding: 20px; }</style>
+            </head>
+            <body>
+              <h1>Index of / (NSOS Package Server)</h1>
+              <pre>
+            Name                                     Last modified         Size
+            <hr>
+            [DIR] <a href="#">../</a>                                      -                      -
+            ${filesHtml}
+            <hr>
+              </pre>
+            </body>
+            </html>`;
+            
+            fs.writeFileSync('index.html', htmlContent);
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
