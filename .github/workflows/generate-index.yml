@@ -30,15 +30,16 @@ jobs:
             const fs = require('fs');
             
             // 1. 透過 GitHub API 獲取你儲存庫的所有 Release 檔案
-            const response = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
             });
             
             let filesHtml = '';
             
             // 2. 循環遍歷所有 Release 裡的大包，動態提取檔名、日期、大小，拒絕硬編碼
-            for (const release of response.data) {
+            for (const release of response) {
               for (const asset of release.assets) {
                 const name = asset.name;
                 const size = (asset.size / 1024 / 1024).toFixed(2) + 'M';
