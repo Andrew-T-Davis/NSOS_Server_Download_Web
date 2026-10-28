@@ -39,7 +39,7 @@ jobs:
             let filesHtml = '';
             
             // 2. 循環遍歷所有 Release 裡的大包，動態提取檔名、日期、大小，拒絕硬編碼
-            for (const release of responses) {
+            for (const release of releases) {
               for (const asset of release.assets) {
                 const name = asset.name;
                 const size = (asset.size / 1024 / 1024).toFixed(2) + 'M';
